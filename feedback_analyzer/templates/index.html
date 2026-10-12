@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Sentiment Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        h2 {
+            margin-bottom: 1rem;
+            color: #2d3748;
+        }
+        .card {
+            background: #fff;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+        textarea {
+            width: 100%;
+            min-height: 140px;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 0.75rem 1.75rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .btn-secondary {
+            background: #edf2f7;
+            color: #2d3748;
+        }
+        .result {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            display: none;
+        }
+        .result.show { display: block; animation: fadeIn 0.4s; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result.positive {
+            background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
+            border-left: 5px solid #38a169;
+        }
+        .result.negative {
+            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+            border-left: 5px solid #e53e3e;
+        }
+        .result.neutral {
+            background: linear-gradient(135deg, #2c3239 0%, #cbd5e0 100%);
+            border-left: 5px solid #718096;
+        }
+        .sentiment-label {
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+        .positive .sentiment-label { color: #22543d; }
+        .negative .sentiment-label { color: #742a2a; }
+        .neutral .sentiment-label { color: #2d3748; }
+        .confidence {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-bottom: 1rem;
+        }
+        .prob-bars {
+            display: grid;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        .prob-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .prob-label {
+            min-width: 80px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .prob-track {
+            flex: 1;
+            height: 24px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .prob-fill {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.8s ease;
+        }
+        .prob-fill.pos { background: #38a169; }
+        .prob-fill.neg { background: #e53e3e; }
+        .prob-fill.neu { background: #718096; }
+        .prob-value {
+            min-width: 55px;
+            text-align: right;
+            font-weight: 600;
+        }
+        .batch-section {
+            border-top: 2px dashed #e2e8f0;
+            padding-top: 2rem;
+            margin-top: 2rem;
+        }
+        .sample-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .tag {
+            padding: 0.4rem 0.9rem;
+            background: #edf2f7;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tag:hover {
+            background: #667eea;
+            color: #fff;
+        }
+        .summary-box {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .summary-item {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+        .summary-item.pos { background: #c6f6d5; }
+        .summary-item.neg { background: #fed7d7; }
+        .summary-item.neu { background: #e2e8f0; }
+        .summary-count {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+        .summary-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+        }
+        .results-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+        }
+        .result-row {
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .result-row:last-child { border-bottom: none; }
+        .result-row:nth-child(even) { background: #f7fafc; }
+        .result-text { flex: 1; padding-right: 1rem; font-size: 0.9rem; }
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .badge.pos { background: #38a169; color: #fff; }
+        .badge.neg { background: #e53e3e; color: #fff; }
+        .badge.neu { background: #718096; color: #fff; }
+        .error {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-top: 1rem;
+            display: none;
+        }
+        .error.show { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💬 Feedback Sentiment Analyzer</h1>
+
+        <div class="card">
+            <h2>Single Feedback Analysis</h2>
+            <p style="margin-bottom: 1rem; color: #4a5568;">Enter your feedback below to classify it as Positive, Negative, or Neutral.</p>
+
+            <div class="sample-tags">
+                <span class="tag" onclick="fillSample('The product quality is excellent and I am very happy!')">😊 Positive example</span>
+                <span class="tag" onclick="fillSample('This service was terrible, completely ruined my day.')">😠 Negative example</span>
+                <span class="tag" onclick="fillSample('The item is okay, nothing special to be honest.')">😐 Neutral example</span>
+            </div>
+
+            <textarea id="feedbackInput" placeholder="Type or paste your feedback here..."></textarea>
+
+            <div class="btn-group">
+                <button class="btn-primary" onclick="analyzeFeedback()">Analyze Sentiment</button>
+                <button class="btn-secondary" onclick="clearSingle()">Clear</button>
+            </div>
+
+            <div class="error" id="singleError"></div>
+
+            <div class="result" id="singleResult">
+                <div class="sentiment-label" id="singleSentiment"></div>
+                <div class="confidence" id="singleConfidence"></div>
+                <div class="prob-bars">
+                    <div class="prob-item">
+                        <span class="prob-label">Positive</span>
+                        <div class="prob-track"><div class="prob-fill pos" id="posBar" style="width:0%"></div></div>
+                        <span class="prob-value" id="posVal">0%</span>
+                    </div>
+                    <div class="prob-item">
+                        <span class="prob-label">Neutral</span>
+                        <div class="prob-track"><div class="prob-fill neu" id="neuBar" style="width:0%"></div></div>
+                        <span class="prob-value" id="neuVal">0%</span>
+                    </div>
+                    <div class="prob-item">
+                        <span class="prob-label">Negative</span>
+                        <div class="prob-track"><div class="prob-fill neg" id="negBar" style="width:0%"></div></div>
+                        <span class="prob-value" id="negVal">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="batch-section">
+                <h2>📊 Batch Analysis</h2>
+                <p style="margin-bottom: 1rem; color: #4a5568;">Paste multiple feedback items, one per line, to analyze them all at once.</p>
+
+                <textarea id="batchInput" placeholder="Paste one feedback per line..."></textarea>
+
+                <div class="btn-group">
+                    <button class="btn-primary" onclick="analyzeBatch()">Analyze All</button>
+                    <button class="btn-secondary" onclick="loadSamples()">Load Sample Data</button>
+                    <button class="btn-secondary" onclick="clearBatch()">Clear</button>
+                </div>
+
+                <div class="error" id="batchError"></div>
+
+                <div id="batchSummary" style="display:none; margin-top: 1.5rem;">
+                    <div class="summary-box">
+                        <div class="summary-item pos">
+                            <div class="summary-count" id="sumPos">0</div>
+                            <div class="summary-label">Positive</div>
+                            <div style="font-size:0.8rem; margin-top:0.25rem;" id="sumPosPct">0%</div>
+                        </div>
+                        <div class="summary-item neu">
+                            <div class="summary-count" id="sumNeu">0</div>
+                            <div class="summary-label">Neutral</div>
+                            <div style="font-size:0.8rem; margin-top:0.25rem;" id="sumNeuPct">0%</div>
+                        </div>
+                        <div class="summary-item neg">
+                            <div class="summary-count" id="sumNeg">0</div>
+                            <div class="summary-label">Negative</div>
+                            <div style="font-size:0.8rem; margin-top:0.25rem;" id="sumNegPct">0%</div>
+                        </div>
+                    </div>
+                    <h3 style="margin-bottom:0.75rem; color:#2d3748;">Detailed Results</h3>
+                    <div class="results-list" id="resultsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const EMOJI = { positive: '😊 Positive', negative: '😠 Negative', neutral: '😐 Neutral' };
+
+        function fillSample(text) {
+            document.getElementById('feedbackInput').value = text;
+        }
+
+        function clearSingle() {
+            document.getElementById('feedbackInput').value = '';
+            document.getElementById('singleResult').classList.remove('show');
+            document.getElementById('singleResult').className = 'result';
+            document.getElementById('singleError').classList.remove('show');
+        }
+
+        function clearBatch() {
+            document.getElementById('batchInput').value = '';
+            document.getElementById('batchSummary').style.display = 'none';
+            document.getElementById('batchError').classList.remove('show');
+        }
+
+        function loadSamples() {
+            document.getElementById('batchInput').value = [
+                'Great product, works perfectly every time!',
+                'Terrible experience, would not recommend at all.',
+                'It is decent, does the job I guess.',
+                'Customer support was super helpful, thanks!',
+                'The app keeps crashing every time I open it.',
+                'Average quality, nothing to write home about.',
+                'Best investment I have made this year, love it!',
+                'Waste of money, broke on the second day.',
+                'Pretty standard, no complaints really.',
+                'Absolutely loved the design and build quality!'
+            ].join('\n');
+        }
+
+        async function analyzeFeedback() {
+            const text = document.getElementById('feedbackInput').value.trim();
+            const errorDiv = document.getElementById('singleError');
+            const resultDiv = document.getElementById('singleResult');
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+
+            if (!text) {
+                errorDiv.textContent = 'Please enter some feedback first.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const res = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ feedback: text })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Analysis failed');
+
+                resultDiv.className = 'result show ' + data.sentiment;
+                document.getElementById('singleSentiment').textContent = EMOJI[data.sentiment];
+                document.getElementById('singleConfidence').textContent =
+                    `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
+
+                const posPct = (data.probabilities.positive * 100).toFixed(1);
+                const neuPct = (data.probabilities.neutral * 100).toFixed(1);
+                const negPct = (data.probabilities.negative * 100).toFixed(1);
+
+                document.getElementById('posBar').style.width = posPct + '%';
+                document.getElementById('neuBar').style.width = neuPct + '%';
+                document.getElementById('negBar').style.width = negPct + '%';
+                document.getElementById('posVal').textContent = posPct + '%';
+                document.getElementById('neuVal').textContent = neuPct + '%';
+                document.getElementById('negVal').textContent = negPct + '%';
+            } catch (err) {
+                errorDiv.textContent = err.message;
+                errorDiv.classList.add('show');
+            }
+        }
+
+        async function analyzeBatch() {
+            const raw = document.getElementById('batchInput').value;
+            const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+            const errorDiv = document.getElementById('batchError');
+            errorDiv.classList.remove('show');
+
+            if (lines.length === 0) {
+                errorDiv.textContent = 'Please enter at least one feedback item (one per line).';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                const res = await fetch('/analyze_batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ feedbacks: lines })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Analysis failed');
+
+                document.getElementById('batchSummary').style.display = 'block';
+                document.getElementById('sumPos').textContent = data.summary.positive;
+                document.getElementById('sumNeu').textContent = data.summary.neutral;
+                document.getElementById('sumNeg').textContent = data.summary.negative;
+                document.getElementById('sumPosPct').textContent = data.summary.positive_pct + '%';
+                document.getElementById('sumNeuPct').textContent = data.summary.neutral_pct + '%';
+                document.getElementById('sumNegPct').textContent = data.summary.negative_pct + '%';
+
+                const list = document.getElementById('resultsList');
+                list.innerHTML = data.results.map(r => {
+                    const cls = r.sentiment === 'positive' ? 'pos' : r.sentiment === 'negative' ? 'neg' : 'neu';
+                    return `<div class="result-row">
+                        <span class="result-text">${escapeHtml(r.feedback)}</span>
+                        <span class="badge ${cls}">${r.sentiment.charAt(0).toUpperCase() + r.sentiment.slice(1)} ${(r.confidence * 100).toFixed(0)}%</span>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                errorDiv.textContent = err.message;
+                errorDiv.classList.add('show');
+            }
+        }
+
+        function escapeHtml(s) {
+            const div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

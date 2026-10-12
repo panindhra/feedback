@@ -1,0 +1,137 @@
+{% extends "_base.html" %}
+{% block title %}Dashboard Overview{% endblock %}
+{% block content %}
+
+<div class="header">
+    <div>
+        <h1>Welcome back, {{ user.name.split()[0] }}! 👋</h1>
+        <p>Here's what's happening with your feedback analysis.</p>
+    </div>
+    <div class="header-right">
+        <div class="date-badge" id="todayBadge"></div>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card total">
+        <div class="stat-label">Total Analyzed</div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-sub">feedback items processed</div>
+    </div>
+    <div class="stat-card pos">
+        <div class="stat-label">😊 Positive</div>
+        <div class="stat-value">{{ stats.positive }}</div>
+        <div class="stat-sub">{{ stats.positive_pct }}% of all feedback</div>
+    </div>
+    <div class="stat-card neu">
+        <div class="stat-label">😐 Neutral</div>
+        <div class="stat-value">{{ stats.neutral }}</div>
+        <div class="stat-sub">{{ stats.neutral_pct }}% of all feedback</div>
+    </div>
+    <div class="stat-card neg">
+        <div class="stat-label">😠 Negative</div>
+        <div class="stat-value">{{ stats.negative }}</div>
+        <div class="stat-sub">{{ stats.negative_pct }}% of all feedback</div>
+    </div>
+</div>
+
+<div class="panel-row">
+    <div class="panel">
+        <div class="panel-head">
+            <h3>🥧 Sentiment Distribution</h3>
+            <span style="font-size:0.8rem; color:#64748b;">from {{ stats.total }} items</span>
+        </div>
+
+        {% if stats.total == 0 %}
+        <div class="empty-state">
+            <div class="icon">📊</div>
+            <p><strong>No data yet!</strong> Start analyzing feedback to see your distribution chart.</p>
+            <a href="/analyze" class="btn btn-primary">Go to Analyzer →</a>
+        </div>
+        {% else %}
+        <div class="chart-wrap">
+            {% set pos = stats.positive_pct / 100 %}
+            {% set neg = stats.negative_pct / 100 %}
+            {% set neu = stats.neutral_pct / 100 %}
+            <div class="donut" style="background: conic-gradient(
+                #10b981 0deg {{ stats.positive_pct * 3.6 }}deg,
+                #64748b {{ stats.positive_pct * 3.6 }}deg {{ (stats.positive_pct + stats.neutral_pct) * 3.6 }}deg,
+                #ef4444 {{ (stats.positive_pct + stats.neutral_pct) * 3.6 }}deg 360deg
+            );">
+                <div style="text-align:center">
+                    <div>{{ stats.total }}</div>
+                    <div class="donut-label">Total</div>
+                </div>
+            </div>
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <span class="legend-dot" style="background:#10b981"></span>
+                    Positive
+                    <span class="legend-pct">{{ stats.positive_pct }}%</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot" style="background:#64748b"></span>
+                    Neutral
+                    <span class="legend-pct">{{ stats.neutral_pct }}%</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot" style="background:#ef4444"></span>
+                    Negative
+                    <span class="legend-pct">{{ stats.negative_pct }}%</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <h3>⚡ Quick Actions</h3>
+        </div>
+        <div style="display:grid; gap:0.75rem;">
+            <a href="/analyze" class="btn btn-primary" style="justify-content:center;">🔍 Analyze New Feedback</a>
+            <a href="/history" class="btn btn-secondary" style="justify-content:center;">📜 View Full History</a>
+            <div style="margin-top:0.5rem; padding:1rem; background:#f8fafc; border-radius:0.6rem; border:1px dashed #e2e8f0;">
+                <div style="font-size:0.8rem; color:#475569; font-weight:600; margin-bottom:0.4rem;">💡 Tip</div>
+                <div style="font-size:0.85rem; color:#64748b; line-height:1.5;">
+                    Use the Batch Analyzer to process dozens of feedback items at once — perfect for surveys, reviews, and support tickets!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel full-panel">
+    <div class="panel-head">
+        <h3>🕒 Recent Analyses</h3>
+        <a href="/history" style="font-size:0.85rem; color:#667eea; text-decoration:none; font-weight:600;">View all →</a>
+    </div>
+
+    {% if stats.recent | length == 0 %}
+    <div class="empty-state">
+        <div class="icon">📭</div>
+        <p>Your recent analyses will appear here. Try analyzing some feedback first!</p>
+    </div>
+    {% else %}
+    <div class="recent-list">
+        {% for item in stats.recent %}
+        <div class="recent-row">
+            <div class="recent-icon {{ 'pos' if item.sentiment == 'positive' else ('neg' if item.sentiment == 'negative' else 'neu') }}">
+                {{ '😊' if item.sentiment == 'positive' else ('😠' if item.sentiment == 'negative' else '😐') }}
+            </div>
+            <div>
+                <div class="recent-text">{{ item.feedback }}</div>
+            </div>
+            <div class="recent-time">{{ item.timestamp }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    const d = new Date();
+    document.getElementById('todayBadge').textContent = '📅 ' + d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+</script>
+
+{% endblock %}

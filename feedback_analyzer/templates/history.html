@@ -1,0 +1,87 @@
+{% extends "_base.html" %}
+{% block title %}Analysis History{% endblock %}
+{% block content %}
+
+<div class="header">
+    <div>
+        <h1>📜 Analysis History</h1>
+        <p>All your past feedback analyses, tracked for you.</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card total">
+        <div class="stat-label">Total Analyzed</div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-sub">feedback items</div>
+    </div>
+    <div class="stat-card pos">
+        <div class="stat-label">😊 Positive Rate</div>
+        <div class="stat-value">{{ stats.positive_pct }}%</div>
+        <div class="stat-sub">{{ stats.positive }} items</div>
+    </div>
+    <div class="stat-card neu">
+        <div class="stat-label">😐 Neutral Rate</div>
+        <div class="stat-value">{{ stats.neutral_pct }}%</div>
+        <div class="stat-sub">{{ stats.neutral }} items</div>
+    </div>
+    <div class="stat-card neg">
+        <div class="stat-label">😠 Negative Rate</div>
+        <div class="stat-value">{{ stats.negative_pct }}%</div>
+        <div class="stat-sub">{{ stats.negative }} items</div>
+    </div>
+</div>
+
+<div class="panel full-panel">
+    <div class="panel-head">
+        <h3>All Analyses ({{ history | length }})</h3>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+            <span style="font-size:0.8rem; color:#64748b; padding:0.3rem 0.6rem; background:#f8fafc; border-radius:0.4rem;">Filter:</span>
+            <button class="btn btn-secondary" style="padding:0.45rem 0.8rem; font-size:0.8rem;" onclick="filterRows('all')">All</button>
+            <button class="btn btn-secondary" style="padding:0.45rem 0.8rem; font-size:0.8rem;" onclick="filterRows('positive')">😊 Pos</button>
+            <button class="btn btn-secondary" style="padding:0.45rem 0.8rem; font-size:0.8rem;" onclick="filterRows('neutral')">😐 Neu</button>
+            <button class="btn btn-secondary" style="padding:0.45rem 0.8rem; font-size:0.8rem;" onclick="filterRows('negative')">😠 Neg</button>
+        </div>
+    </div>
+
+    {% if history | length == 0 %}
+    <div class="empty-state">
+        <div class="icon">📭</div>
+        <p><strong>No history yet!</strong> Every analysis you run will be saved here automatically.</p>
+        <a href="/analyze" class="btn btn-primary">Go run some analysis →</a>
+    </div>
+    {% else %}
+    <div class="results-list" id="historyList" style="max-height: 600px;">
+        {% for h in history %}
+        <div class="list-row" data-sentiment="{{ h.sentiment }}">
+            <div>
+                <div class="list-text" style="font-weight:500;">{{ h.feedback }}</div>
+                <div style="font-size:0.75rem; color:#94a3b8; margin-top:3px;">🕒 {{ h.timestamp }} · ID: {{ h.id }}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+                <span style="font-size:0.8rem; color:#64748b; font-weight:600;">{{ (h.confidence * 100) | round(0) | int }}%</span>
+                {% set cls = 'pos' if h.sentiment == 'positive' else ('neg' if h.sentiment == 'negative' else 'neu') %}
+                {% set emoji = '😊' if h.sentiment == 'positive' else ('😠' if h.sentiment == 'negative' else '😐') %}
+                {% set lbl = h.sentiment | capitalize %}
+                <span class="badge {{ cls }}">{{ emoji }} {{ lbl }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function filterRows(type) {
+    const rows = document.querySelectorAll('#historyList .list-row');
+    rows.forEach(r => {
+        if (type === 'all' || r.dataset.sentiment === type) {
+            r.style.display = '';
+        } else {
+            r.style.display = 'none';
+        }
+    });
+}
+</script>
+
+{% endblock %}

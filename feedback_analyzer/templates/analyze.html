@@ -1,0 +1,256 @@
+{% extends "_base.html" %}
+{% block title %}Analyze Feedback{% endblock %}
+{% block content %}
+
+<div class="header">
+    <div>
+        <h1>🔍 Analyze Feedback</h1>
+        <p>Classify feedback as Positive, Negative, or Neutral with AI-powered analysis.</p>
+    </div>
+</div>
+
+<div class="panel-row">
+    <div class="panel">
+        <div class="panel-head">
+            <h3>Single Feedback</h3>
+        </div>
+
+        <div class="sample-tags">
+            <span class="tag" onclick="fillSample('This is absolutely amazing! Best experience ever, highly recommend to everyone!')">😊 Positive example</span>
+            <span class="tag" onclick="fillSample('Worst service I have ever received, completely disappointed and angry.')">😠 Negative example</span>
+            <span class="tag" onclick="fillSample('It is okay, nothing special, does the job as expected.')">😐 Neutral example</span>
+        </div>
+
+        <textarea id="feedbackInput" placeholder="Type or paste your feedback here..."></textarea>
+
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="analyzeFeedback()">🚀 Analyze Sentiment</button>
+            <button class="btn btn-secondary" onclick="clearSingle()">🗑️ Clear</button>
+        </div>
+
+        <div class="error" id="singleError"></div>
+
+        <div class="result-card" id="singleResult">
+            <div class="result-head">
+                <div class="sentiment-big" id="singleSentiment"></div>
+                <div class="confidence" id="singleConfidence"></div>
+            </div>
+            <div class="prob-bars">
+                <div class="prob-item">
+                    <span class="prob-label">😊 Positive</span>
+                    <div class="prob-track"><div class="prob-fill pos" id="posBar" style="width:0%"></div></div>
+                    <span class="prob-val" id="posVal">0%</span>
+                </div>
+                <div class="prob-item">
+                    <span class="prob-label">😐 Neutral</span>
+                    <div class="prob-track"><div class="prob-fill neu" id="neuBar" style="width:0%"></div></div>
+                    <span class="prob-val" id="neuVal">0%</span>
+                </div>
+                <div class="prob-item">
+                    <span class="prob-label">😠 Negative</span>
+                    <div class="prob-track"><div class="prob-fill neg" id="negBar" style="width:0%"></div></div>
+                    <span class="prob-val" id="negVal">0%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <h3>💡 How It Works</h3>
+        </div>
+        <div style="display:grid; gap:1rem;">
+            <div style="display:flex; gap:1rem;">
+                <div style="width:40px; height:40px; background:#ede9fe; color:#6d28d9; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">1</div>
+                <div>
+                    <div style="font-weight:700; color:#1e293b;">Text Preprocessing</div>
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:2px;">Lowercase, remove punctuation, numbers, and stop words.</div>
+                </div>
+            </div>
+            <div style="display:flex; gap:1rem;">
+                <div style="width:40px; height:40px; background:#dbeafe; color:#1d4ed8; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">2</div>
+                <div>
+                    <div style="font-weight:700; color:#1e293b;">TF-IDF Vectorization</div>
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:2px;">Converts text to 5000-dim feature vectors using unigram + bigram weighting.</div>
+                </div>
+            </div>
+            <div style="display:flex; gap:1rem;">
+                <div style="width:40px; height:40px; background:#d1fae5; color:#047857; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; flex-shrink:0;">3</div>
+                <div>
+                    <div style="font-weight:700; color:#1e293b;">Logistic Regression</div>
+                    <div style="font-size:0.85rem; color:#64748b; margin-top:2px;">Trained on 90 labeled samples to output 3-class probabilities.</div>
+                </div>
+            </div>
+            <div style="margin-top:0.5rem; padding:1rem; background:#f8fafc; border-radius:0.6rem; border-left:4px solid #667eea;">
+                <div style="font-size:0.82rem; color:#475569; font-weight:600; margin-bottom:4px;">🎯 Current Model</div>
+                <div style="font-size:0.85rem; color:#64748b;">TF-IDF (5k features, n-gram 1-2) + LogisticRegression (C=5.0, balanced class weights)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="panel full-panel">
+    <div class="panel-head">
+        <h3>📦 Batch Analysis</h3>
+        <span style="font-size:0.85rem; color:#64748b;">Paste multiple items — one per line</span>
+    </div>
+
+    <textarea id="batchInput" rows="8" placeholder="Paste feedback items, one per line...&#10;Example:&#10;Great product, highly recommend!&#10;Terrible, never buying again.&#10;It works as described."></textarea>
+
+    <div class="btn-group">
+        <button class="btn btn-primary" onclick="analyzeBatch()">⚡ Analyze All</button>
+        <button class="btn btn-secondary" onclick="loadSamples()">📥 Load Sample Data</button>
+        <button class="btn btn-secondary" onclick="clearBatch()">🗑️ Clear</button>
+    </div>
+
+    <div class="error" id="batchError"></div>
+
+    <div id="batchSummary" style="display:none;">
+        <div class="summary-box">
+            <div class="sum-card pos">
+                <div class="sum-count" id="sumPos">0</div>
+                <div class="sum-label">😊 Positive</div>
+                <div class="sum-pct" id="sumPosPct">0%</div>
+            </div>
+            <div class="sum-card neu">
+                <div class="sum-count" id="sumNeu">0</div>
+                <div class="sum-label">😐 Neutral</div>
+                <div class="sum-pct" id="sumNeuPct">0%</div>
+            </div>
+            <div class="sum-card neg">
+                <div class="sum-count" id="sumNeg">0</div>
+                <div class="sum-label">😠 Negative</div>
+                <div class="sum-pct" id="sumNegPct">0%</div>
+            </div>
+        </div>
+        <div class="panel-head" style="padding-bottom:0.5rem; margin-bottom:0.75rem;">
+            <h3 style="font-size:1rem;">📋 Detailed Results</h3>
+            <span style="font-size:0.8rem; color:#64748b;" id="sumTotal">0 items</span>
+        </div>
+        <div class="results-list" id="resultsList"></div>
+    </div>
+</div>
+
+<script>
+    function fillSample(text) {
+        document.getElementById('feedbackInput').value = text;
+    }
+    function clearSingle() {
+        document.getElementById('feedbackInput').value = '';
+        document.getElementById('singleResult').className = 'result-card';
+        document.getElementById('singleError').classList.remove('show');
+    }
+    function clearBatch() {
+        document.getElementById('batchInput').value = '';
+        document.getElementById('batchSummary').style.display = 'none';
+        document.getElementById('batchError').classList.remove('show');
+    }
+    function loadSamples() {
+        document.getElementById('batchInput').value = [
+            'Great product, works perfectly every time!',
+            'Terrible experience, would not recommend at all.',
+            'It is decent, does the job I guess.',
+            'Customer support was super helpful, thanks team!',
+            'The app keeps crashing every time I open it.',
+            'Average quality, nothing to write home about.',
+            'Best investment I have made this year, love it!',
+            'Waste of money, broke on the second day.',
+            'Pretty standard, no complaints really.',
+            'Absolutely loved the design and build quality!'
+        ].join('\n');
+    }
+
+    async function analyzeFeedback() {
+        const text = document.getElementById('feedbackInput').value.trim();
+        const errDiv = document.getElementById('singleError');
+        const resDiv = document.getElementById('singleResult');
+        errDiv.classList.remove('show');
+        resDiv.className = 'result-card';
+        if (!text) {
+            errDiv.textContent = 'Please enter some feedback first.';
+            errDiv.classList.add('show');
+            return;
+        }
+        try {
+            const r = await fetch('/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feedback: text })
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.error || 'Analysis failed');
+
+            const cls = d.sentiment === 'positive' ? 'pos' : (d.sentiment === 'negative' ? 'neg' : 'neu');
+            const emoji = d.sentiment === 'positive' ? '😊' : (d.sentiment === 'negative' ? '😠' : '😐');
+            const label = d.sentiment.charAt(0).toUpperCase() + d.sentiment.slice(1);
+
+            resDiv.className = 'result-card show ' + cls;
+            document.getElementById('singleSentiment').innerHTML = emoji + ' ' + label;
+            document.getElementById('singleConfidence').textContent = 'Confidence: ' + (d.confidence * 100).toFixed(1) + '%';
+
+            const posPct = (d.probabilities.positive * 100).toFixed(1);
+            const neuPct = (d.probabilities.neutral * 100).toFixed(1);
+            const negPct = (d.probabilities.negative * 100).toFixed(1);
+            document.getElementById('posBar').style.width = posPct + '%';
+            document.getElementById('neuBar').style.width = neuPct + '%';
+            document.getElementById('negBar').style.width = negPct + '%';
+            document.getElementById('posVal').textContent = posPct + '%';
+            document.getElementById('neuVal').textContent = neuPct + '%';
+            document.getElementById('negVal').textContent = negPct + '%';
+        } catch (e) {
+            errDiv.textContent = e.message;
+            errDiv.classList.add('show');
+        }
+    }
+
+    async function analyzeBatch() {
+        const raw = document.getElementById('batchInput').value;
+        const lines = raw.split('\n').map(l => l.trim()).filter(l => l);
+        const errDiv = document.getElementById('batchError');
+        errDiv.classList.remove('show');
+        if (lines.length === 0) {
+            errDiv.textContent = 'Please enter at least one feedback item.';
+            errDiv.classList.add('show');
+            return;
+        }
+        try {
+            const r = await fetch('/analyze_batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feedbacks: lines })
+            });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.error || 'Failed');
+
+            document.getElementById('batchSummary').style.display = 'block';
+            document.getElementById('sumPos').textContent = d.summary.positive;
+            document.getElementById('sumNeu').textContent = d.summary.neutral;
+            document.getElementById('sumNeg').textContent = d.summary.negative;
+            document.getElementById('sumPosPct').textContent = d.summary.positive_pct + '%';
+            document.getElementById('sumNeuPct').textContent = d.summary.neutral_pct + '%';
+            document.getElementById('sumNegPct').textContent = d.summary.negative_pct + '%';
+            document.getElementById('sumTotal').textContent = d.summary.total + ' items';
+
+            const list = document.getElementById('resultsList');
+            list.innerHTML = d.results.map(x => {
+                const cls = x.sentiment === 'positive' ? 'pos' : (x.sentiment === 'negative' ? 'neg' : 'neu');
+                const lbl = x.sentiment.charAt(0).toUpperCase() + x.sentiment.slice(1);
+                return `<div class="list-row">
+                    <span class="list-text">${escapeHtml(x.feedback)}</span>
+                    <span class="badge ${cls}">${lbl} ${(x.confidence*100).toFixed(0)}%</span>
+                </div>`;
+            }).join('');
+        } catch (e) {
+            errDiv.textContent = e.message;
+            errDiv.classList.add('show');
+        }
+    }
+
+    function escapeHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+</script>
+
+{% endblock %}
